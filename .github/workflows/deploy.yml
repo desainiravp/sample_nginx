@@ -27,19 +27,13 @@ jobs:
           mkdir -p ~/.kube
           echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
 
-      # Debugging Step 4: Check if ~/.ssh already exists
-      - name: Check if ~/.ssh exists
-        run: |
-          echo "Checking if ~/.ssh directory exists"
-          ls -ld ~/.ssh
-
-      # Step 4: Set up SSH key
+      # Step 4: Set up SSH key and debug
       - name: Set up SSH
         run: |
           echo "Creating SSH directory"
           mkdir -p ~/.ssh
           echo "Verifying if SSH directory was created"
-          ls -ld ~/.ssh
+          ls -ld ~/.ssh || echo "Directory ~/.ssh doesn't exist, but it's okay to create it."
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H 192.168.0.131 >> ~/.ssh/known_hosts
@@ -112,5 +106,3 @@ jobs:
         run: |
           kubectl get pods
           kubectl get svc
-
-
