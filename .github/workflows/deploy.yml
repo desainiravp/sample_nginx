@@ -27,19 +27,28 @@ jobs:
           mkdir -p ~/.kube
           echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
 
-      # Step 4: Set up SSH key and debug
-      - name: Set up SSH
-        run: |
-          echo "Creating SSH directory"
-          mkdir -p ~/.ssh
-          echo "Verifying if SSH directory was created"
-          ls -ld ~/.ssh || echo "Directory ~/.ssh doesn't exist, but it's okay to create it."
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H 192.168.0.131 >> ~/.ssh/known_hosts
-          ssh-keyscan -H 192.168.0.132 >> ~/.ssh/known_hosts
-          ssh-keyscan -H 192.168.0.133 >> ~/.ssh/known_hosts
+    - name: Set up SSH key
+  run: |
+    echo "Creating SSH directory"
+    mkdir -p ~/.ssh
+    echo "Verifying if SSH directory was created"
+    ls -ld ~/.ssh || echo "Directory ~/.ssh doesn't exist, but it's okay to create it."
 
+    echo "Setting up SSH private key"
+    echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+    chmod 600 ~/.ssh/id_rsa
+    echo "SSH private key has been written"
+    
+    # List SSH files to verify key creation
+    ls -l ~/.ssh/
+
+    echo "Setting up known_hosts"
+    ssh-keyscan -H 192.168.0.131 >> ~/.ssh/known_hosts
+    ssh-keyscan -H 192.168.0.132 >> ~/.ssh/known_hosts
+    ssh-keyscan -H 192.168.0.133 >> ~/.ssh/known_hosts
+
+    # Verify the known_hosts file
+    cat ~/.ssh/known_hosts || echo "known_hosts file is empty or not created"
       # Step 5: Create Kubernetes resources
       - name: Deploy index.html to Kubernetes
         run: |
