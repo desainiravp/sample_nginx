@@ -1,91 +1,29 @@
-name: Deploy to Local Kubernetes
+name: Deploy to Internal Network
 
 on:
   push:
     branches:
-      - master  # Trigger on push to the master branch
+      - master
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted  # This will use your self-hosted runner
 
     steps:
-      # Step 1: Checkout code
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Step 2: Install kubectl
-      - name: Install kubectl
+      - name: Install dependencies
         run: |
-          curl -LO https://dl.k8s.io/release/v1.25.0/bin/linux/amd64/kubectl
-          chmod +x ./kubectl
-          sudo mv ./kubectl /usr/local/bin/kubectl
-
-      # Step 3: Set up Kubernetes credentials
+          # Your setup commands here
+          sudo apt-get update
+          sudo apt-get install -y kubectl
+          
       - name: Set up Kubernetes credentials
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
 
-      # Step 4: Set up SSH key
-      - name: Set up SSH key
+      - name: Deploy Application
         run: |
-          echo "Creating SSH directory"
-          mkdir -p ~/.ssh
-          echo "Verifying if SSH directory was created"
-          ls -ld ~/.ssh || echo "Directory ~/.ssh doesn't exist, but it's okay to create it."
-        
-          echo "Setting up SSH private key"
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          echo "SSH private key has been written"
-          
-          # List SSH files to verify key creation
-          ls -l ~/.ssh/
-        
-          echo "Setting up known_hosts"
-          ssh-keyscan -v -H 192.168.0.131 >> ~/.ssh/known_hosts || echo "Failed to fetch host key for 192.168.0.131"
-          ssh-keyscan -v -H 192.168.0.132 >> ~/.ssh/known_hosts || echo "Failed to fetch host key for 192.168.0.132"
-          ssh-keyscan -v -H 192.168.0.133 >> ~/.ssh/known_hosts || echo "Failed to fetch host key for 192.168.0.133"
-        
-          # Verify the known_hosts file
-          cat ~/.ssh/known_hosts || echo "known_hosts file is empty or not created"
-
-      # Step 5: Create Kubernetes resources
-      - name: Deploy index.html to Kubernetes
-        run: |
-          echo "
-          apiVersion: apps/v1
-          kind: Deployment
-          metadata:
-            name: nginx-deployment
-          spec:
-            replicas: 1
-            selector:
-              matchLabels:
-                app: nginx
-            template:
-              metadata:
-                labels:
-                  app: nginx
-              spec:
-                containers:
-                - name: nginx
-                  image: nginx:alpine
-                  volumeMounts:
-                  - name: index-volume
-                    mountPath: /usr/share/nginx/html/index.html
-                    subPath: index.html
-          ---
-          apiVersion: v1
-          kind: ConfigMap
-          metadata:
-            name: index-configmap
-          data:
-            index.html: |
-              <!DOCTYPE html>
-              <html lang="en">
-              <head>
-                  <meta charset="UTF-8">
-                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                  <title>Hello World -
+          kubectl apply -f deployment.yaml
